@@ -1,0 +1,9 @@
+*.pyc
+__pycache__/
+*.swp
+nrdpd
+.testrepository/
+doc-out/
+.tox/
+dist/
+build/
