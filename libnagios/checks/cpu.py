@@ -14,13 +14,13 @@
 
 """Disk checks."""
 
-import shutil
+import psutil
 
 from .. import plugin
 
-TEMPLATE = """Disk {disk} :: Free: {disk_free:,.3f} GB ({disk_free_pct:.2f})
-Disk Total: {disk_total:,.3f} GB
-Disk Used: {disk_used:,.3f} GB ({disk_used_pct:.2f})
+TEMPLATE = """Swap Free: {swap_free:,.3f} GB ({swap_free_pct:.2%})
+Swap Total: {swap_total:,.3f} GB
+Swap Used: {swap_used:,.3f} GB ({swap_used_pct:.2f})
 """
 
 class Check(plugin.Plugin):
@@ -49,21 +49,18 @@ class Check(plugin.Plugin):
             dest="warn",
             type=float,
             default=20.0,
-            help="Amount of disk free to warn at",
+            help="Amount of swap free to warn at [Default: %0.2(default)f]",
             )
         self.parser.add_argument("-c", "--critical",
             dest="critical",
             type=float,
             default=10.0,
-            help="Amount of disk free to mark critical [Default: %0.2(default)f]",
-            )
-        self.parser.add_argument("disk",
-            help="Directory path for disk to check",
+            help="Amount of swap free to mark critical [Default: %0.2(default)f]",
             )
 
     def execute(self):
         try:
-            result = shutil.disk_usage(self.opts.disk)
+            result = psutil.swap_memory()
         except OSError as err:
             self.message = "Error gathering disk usage: %s" % err
             self.status = plugin.Status.UNKNOWN
@@ -71,12 +68,13 @@ class Check(plugin.Plugin):
 
         # Stats and stuff
         stats = {
-            "disk": self.opts.disk,
-            "disk_total": result.total / (1024 * 1024 * 1024),
-            "disk_used": result.used / (1024 * 1024 * 1024),
-            "disk_free": result.free / (1024 * 1024 * 1024),
-            "disk_free_pct": (result.free / result.total) * 100.0,
-            "disk_used_pct": (result.used / result.total) * 100.0,
+            "swap_total": result.total / (1024 * 1024 * 1024),
+            "swap_used": result.used / (1024 * 1024 * 1024),
+            "swap_free": result.free / (1024 * 1024 * 1024),
+            "swap_in": result.sin / (1024 * 1024 * 1024),
+            "swap_out": result.sout / (1024 * 1024 * 1024),
+            "swap_free_pct": (result.free / result.total) * 100.0,
+            "swap_used_pct": result.percent,
             }
 
         if self.opts.mb or self.opts.gb:
@@ -84,7 +82,8 @@ class Check(plugin.Plugin):
             free = result.free / divisor
         else:
             # Fallback to percentage
-            free = (result.free / result.total) * 100.0
+            free = stats["swap_free_pct"]
+
 
         if free < self.opts.critical:
             self.status = plugin.Status.CRITICAL

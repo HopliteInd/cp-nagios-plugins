@@ -1,0 +1,5 @@
+[console_scripts]
+check_cp_cpu = libnagios.checks.cpu:run
+check_cp_disk = libnagios.checks.disk:run
+check_cp_load = libnagios.checks.load:run
+

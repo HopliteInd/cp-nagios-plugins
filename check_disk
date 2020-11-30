@@ -1,4 +1,0 @@
-#!/usr/bin/env python3
-import libnagios.checks.disk
-
-libnagios.checks.disk.run()
