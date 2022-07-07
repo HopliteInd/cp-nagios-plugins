@@ -7,5 +7,6 @@ doc-out/
 .tox/
 dist/
 build/
+.gitignore/
 
 *.egg-info/
