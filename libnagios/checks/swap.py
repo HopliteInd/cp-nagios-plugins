@@ -18,47 +18,62 @@ import psutil
 
 from .. import plugin
 
-TEMPLATE = """Swap Free: {swap_free:,.3f} GB ({swap_free_pct:.2%})
+TEMPLATE = """Swap Free {state}: {swap_free:,.3f} GB ({swap_free_pct:.2f}%)
 Swap Total: {swap_total:,.3f} GB
-Swap Used: {swap_used:,.3f} GB ({swap_used_pct:.2f})
+Swap Used: {swap_used:,.3f} GB ({swap_used_pct:.2f}%)
 """
 
+
 class Check(plugin.Plugin):
+    """Nagios plugin to perform SWAP checks."""
 
     def cli(self):
+        """Add command line arguments specific to the plugin."""
         group = self.parser.add_mutually_exclusive_group()
-        group.add_argument("-p", "--percent",
+        group.add_argument(
+            "-p",
+            "--percent",
             dest="percent",
             action="store_true",
             default=False,
-            help="Warning/Critical values are a percentage (default)"
-            )
-        group.add_argument("-m", "--mega-bytes",
+            help="Warning/Critical values are a percentage (default)",
+        )
+        group.add_argument(
+            "-m",
+            "--mega-bytes",
             dest="mb",
             action="store_true",
             default=False,
-            help="Warning/Critical values are in Mega-Bytes"
-            )
-        group.add_argument("-g", "--giga-bytes",
+            help="Warning/Critical values are in Mega-Bytes",
+        )
+        group.add_argument(
+            "-g",
+            "--giga-bytes",
             dest="gb",
             action="store_true",
             default=False,
-            help="Warning/Critical values are in Giga-Bytes"
-            )
-        self.parser.add_argument("-w", "--warn",
+            help="Warning/Critical values are in Giga-Bytes",
+        )
+        self.parser.add_argument(
+            "-w",
+            "--warn",
             dest="warn",
             type=float,
             default=20.0,
             help="Amount of swap free to warn at [Default: %0.2(default)f]",
-            )
-        self.parser.add_argument("-c", "--critical",
+        )
+        self.parser.add_argument(
+            "-c",
+            "--critical",
             dest="critical",
             type=float,
             default=10.0,
-            help="Amount of swap free to mark critical [Default: %0.2(default)f]",
-            )
+            help="Amount of swap free to mark critical "
+            "[Default: %0.2(default)f]",
+        )
 
     def execute(self):
+        """Execute the actual working parts of the plugin."""
         try:
             result = psutil.swap_memory()
         except OSError as err:
@@ -75,7 +90,7 @@ class Check(plugin.Plugin):
             "swap_out": result.sout / (1024 * 1024 * 1024),
             "swap_free_pct": (result.free / result.total) * 100.0,
             "swap_used_pct": result.percent,
-            }
+        }
 
         if self.opts.mb or self.opts.gb:
             divisor = 1024 * 1024 if self.opts.mb else 1024 * 1024 * 1024
@@ -84,7 +99,6 @@ class Check(plugin.Plugin):
             # Fallback to percentage
             free = stats["swap_free_pct"]
 
-
         if free < self.opts.critical:
             self.status = plugin.Status.CRITICAL
         elif free < self.opts.warn:
@@ -92,13 +106,16 @@ class Check(plugin.Plugin):
         else:
             self.status = plugin.Status.OK
 
+        stats["state"] = self.status.name
         self.message = TEMPLATE.strip().format(**stats)
         self.add_perf_multi(stats)
 
 
 def run():
+    """Entry point from setup.py for installation of wrapper."""
     instance = Check()
     instance.main()
+
 
 if __name__ == "__main__":
     run()

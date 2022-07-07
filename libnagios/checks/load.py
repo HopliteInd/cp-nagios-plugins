@@ -14,45 +14,103 @@
 
 """Disk checks."""
 
+import platform
+import time
+
+# 3rd party
 import psutil
 
+# Local
 from .. import plugin
 
+TEMPLATE = """Load {status} :: {msg}
+One minute:      {one:.1f}
+Five minute:     {five:.1f}
+Fifteen minute:  {fifteen:.1f}
+"""
+
+
 class Check(plugin.Plugin):
+    """Nagios plugin to perform Load checks."""
 
     def cli(self):
-        self.parser.add_argument("-w", "--warn",
+        """Add command line arguments specific to the plugin."""
+        warn = [12, 10, 8]
+        crit = [15, 12, 10]
+        self.parser.add_argument(
+            "-w",
+            "--warn",
             dest="warn",
             type=float,
             nargs=3,
-            default=[10, 8, 7],
-            help="Load average to warn at",
-            )
-        self.parser.add_argument("-c", "--critical",
+            default=warn,
+            help="Load average to warn at. [Defaults: {:.1f}, "
+            "{:.1f}, {:.1f} for 1, 5, 15 minute average.]".format(*warn),
+        )
+        self.parser.add_argument(
+            "-c",
+            "--critical",
             dest="critical",
             type=float,
             nargs=3,
-            default=[12, 10, 9],
-            help="Amount of disk free to mark critical [Default: %0.2(default)f]",
-            )
+            default=crit,
+            help="Load average to go critical at. [Defaults: {:.1f}, "
+            "{:.1f}, {:.1f} for 1, 5, 15 minute average.]".format(*crit),
+        )
 
     def execute(self):
+        """Execute the actual working parts of the plugin."""
         try:
-            result = psutil.getloadavg()
+            stats = dict(zip(["one", "five", "fifteen"], psutil.getloadavg()))
+            if platform.system == "Windows":
+                time.sleep(5.5)
+                stats = dict(
+                    zip(["one", "five", "fifteen"], psutil.getloadavg())
+                )
         except OSError as err:
             self.message = "Error gathering load average: %s" % err
             self.status = plugin.Status.UNKNOWN
             return
 
-        print(opts.warn)
-        self.message = "Load average {:.2f} {:.2f} {:.2f}".format(
-            result[0],
-            result[1],
-            result[2],
-            )
+        self.add_perf_multi({"loadavg_%s" % x: stats[x] for x in stats})
+
+        output = {}
+        for status, values in (
+            (plugin.Status.WARN, self.opts.warn),
+            (plugin.Status.CRITICAL, self.opts.critical),
+        ):
+            output[status] = []
+            one, five, fifteen = values
+            if stats["one"] > one:
+                self.status = status
+                output[status].append(
+                    "1 min: %0.1f > %0.1f" % (stats["one"], one)
+                )
+            if stats["five"] > five:
+                self.status = status
+                output[status].append(
+                    "5 min: %0.1f > %0.1f" % (stats["five"], five)
+                )
+            if stats["fifteen"] > fifteen:
+                self.status = status
+                output[status].append(
+                    "15 min: %0.1f > %0.1f" % (stats["fifteen"], fifteen)
+                )
+
+        stats["msg"] = "{one:.1f}, {five:.1f}, {fifteen:.1f}".format(**stats)
+
+        # Order matters.  Highest criticality must be last
+        for status in (plugin.Status.WARN, plugin.Status.CRITICAL):
+            if output[status]:
+                self.status = status
+                stats["msg"] = " :: ".join(output[status])
+
+        stats["status"] = self.status.name
+        self.message = TEMPLATE.strip().format(**stats)
 
 
 def run():
+    """Entry point from setup.py for installation of wrapper."""
     instance = Check()
     instance.main()
 

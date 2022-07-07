@@ -13,11 +13,9 @@
 
 """Nagios plugins library."""
 
-from .plugin import Status, Plugin
-from . import checks
-
 __all__ = [
-    "Status",
-    "Plugin",
+    "plugin",
     "checks",
 ]
+
+__version__ = "0.3"

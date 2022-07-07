@@ -14,91 +14,215 @@
 
 """Disk checks."""
 
+import dbm
+import json
+import os.path
+import platform
+import sys
+import time
+
+# 3rd party
 import psutil
 
 from .. import plugin
 
-TEMPLATE = """Swap Free: {swap_free:,.3f} GB ({swap_free_pct:.2%})
+TEMPLATE = """CPU Usage  {swap_free:,.3f} GB ({swap_free_pct:.2%})
 Swap Total: {swap_total:,.3f} GB
 Swap Used: {swap_used:,.3f} GB ({swap_used_pct:.2f})
 """
 
+
 class Check(plugin.Plugin):
+    """Nagios plugin to perform CPU checks."""
 
     def cli(self):
-        group = self.parser.add_mutually_exclusive_group()
-        group.add_argument("-p", "--percent",
-            dest="percent",
-            action="store_true",
-            default=False,
-            help="Warning/Critical values are a percentage (default)"
-            )
-        group.add_argument("-m", "--mega-bytes",
-            dest="mb",
-            action="store_true",
-            default=False,
-            help="Warning/Critical values are in Mega-Bytes"
-            )
-        group.add_argument("-g", "--giga-bytes",
-            dest="gb",
-            action="store_true",
-            default=False,
-            help="Warning/Critical values are in Giga-Bytes"
-            )
-        self.parser.add_argument("-w", "--warn",
+        """Add command line arguments specific to the plugin."""
+        # Default config.ini path
+        winpath = os.path.join(
+            os.path.dirname(os.path.realpath(sys.argv[0])), "check_cp_cpu.db"
+        )
+        posixpath = os.path.expanduser("~/.check_cp_cpu.db")
+        cfgpath = winpath if platform.system() == "Windows" else posixpath
+
+        self.current = psutil.cpu_times()
+
+        self.parser.add_argument(
+            "-t",
+            "--time-span",
+            dest="span",
+            type=int,
+            default=300,
+            help="Time in seconds to do calculations for.  This value should "
+            "be some multiple of the frequency of your checks. [Default: "
+            "%(default)d]",
+        )
+        self.parser.add_argument(
+            "-s",
+            "--state-file",
+            dest="state",
+            default=cfgpath,
+            help="Path to state database [Default: %(default)s]",
+        )
+        self.parser.add_argument(
+            "-w",
+            "--warn",
             dest="warn",
-            type=float,
-            default=20.0,
-            help="Amount of swap free to warn at [Default: %0.2(default)f]",
-            )
-        self.parser.add_argument("-c", "--critical",
+            nargs=2,
+            action="append",
+            metavar="<type> <value>",
+            default=[["user", 80.0], ["system", 50.0]],
+            help="CPU usage percent to warn at.  The defaults are 80 for "
+            "'user' and 50 for 'system'.  Valid states are: %s"
+            % ", ".join(self.current._fields),
+        )
+        self.parser.add_argument(
+            "-c",
+            "--critical",
             dest="critical",
-            type=float,
-            default=10.0,
-            help="Amount of swap free to mark critical [Default: %0.2(default)f]",
-            )
+            nargs=2,
+            action="append",
+            metavar="<type> <value>",
+            default=[["user", 80.0], ["system", 50.0]],
+            help="CPU usage percent to go critical at.  The defaults are 90 "
+            "for 'user' and 75 for 'system'.  Valid states are: %s"
+            % ", ".join(self.current._fields),
+        )
 
     def execute(self):
+        """Execute the actual working parts of the plugin."""
+        # validate types
+        warn = {}
+        critical = {}
+        current = self.current._asdict()
+        for key, value in self.opts.warn:
+            if key not in current:
+                self.message = (
+                    "Invalid CPU state: [%s]. Valid values are [%s]"
+                    % (
+                        key,
+                        ", ".join(current.keys()),
+                    )
+                )
+                self.status = plugin.Status.UNKNOWN
+                return
+            try:
+                warn[key] = float(value)
+            except ValueError:
+                self.message = "Warn value for %s must be a float" % key
+                self.status = plugin.Status.UNKNOWN
+                return
+
+        for key, value in self.opts.critical:
+            if key not in current:
+                self.message = (
+                    "Invalid CPU state: [%s]. Valid values are [%s]"
+                    % (
+                        key,
+                        ", ".join(current.keys()),
+                    )
+                )
+                self.status = plugin.Status.UNKNOWN
+                return
+            try:
+                critical[key] = float(value)
+            except ValueError:
+                self.message = "Warn value for %s must be a float" % key
+                self.status = plugin.Status.UNKNOWN
+                return
+
         try:
-            result = psutil.swap_memory()
-        except OSError as err:
-            self.message = "Error gathering disk usage: %s" % err
+            db = dbm.open(self.opts.state, "c")
+        except Exception as err:
+            self.message = "Failed to open state db: %s" % err
             self.status = plugin.Status.UNKNOWN
             return
 
-        # Stats and stuff
-        stats = {
-            "swap_total": result.total / (1024 * 1024 * 1024),
-            "swap_used": result.used / (1024 * 1024 * 1024),
-            "swap_free": result.free / (1024 * 1024 * 1024),
-            "swap_in": result.sin / (1024 * 1024 * 1024),
-            "swap_out": result.sout / (1024 * 1024 * 1024),
-            "swap_free_pct": (result.free / result.total) * 100.0,
-            "swap_used_pct": result.percent,
-            }
+        now = int(time.time())
+        old = now - self.opts.span * 3
 
-        if self.opts.mb or self.opts.gb:
-            divisor = 1024 * 1024 if self.opts.mb else 1024 * 1024 * 1024
-            free = result.free / divisor
-        else:
-            # Fallback to percentage
-            free = stats["swap_free_pct"]
+        db[str(now)] = json.dumps(self.current._asdict())
 
+        closest = None
+        for key in list(db.keys()):
+            ts = int(key.decode("utf-8"))
 
-        if free < self.opts.critical:
-            self.status = plugin.Status.CRITICAL
-        elif free < self.opts.warn:
-            self.status = plugin.Status.WARN
-        else:
-            self.status = plugin.Status.OK
+            # Cleanup of old stuff
+            if ts < old:
+                del db[key]
+                continue
 
-        self.message = TEMPLATE.strip().format(**stats)
-        self.add_perf_multi(stats)
+            # Ignore current timestamp
+            if ts == now:
+                continue
+
+            if closest is None:
+                closest = ts
+                continue
+
+            cl_distance = abs(self.opts.span - (now - closest))
+
+            if abs(self.opts.span - (now - ts)) < cl_distance:
+                closest = ts
+
+        if closest is None:
+            self.message = "Not enough data points yet.."
+            return
+
+        history = json.loads(db[str(closest)])
+        db.close()
+
+        start_ticks = sum([history[x] for x in history])
+        end_ticks = sum([current[x] for x in current])
+        total = end_ticks - start_ticks
+
+        self.message = "ticks: %d" % total
+
+        used = (
+            sum(
+                [
+                    (current[x] - history[x])
+                    for x in current
+                    if x not in ("idle",)
+                ]
+            )
+            / total
+            * 100
+        )
+        stats = {x: ((current[x] - history[x]) / total) * 100 for x in current}
+        output = []
+
+        for key, value in critical.items():
+            if stats[key] > value:
+                output.append(
+                    "CRITICAL: %s CPU is %d%% for the last %d seconds"
+                    % (key, stats[key], abs(closest - now))
+                )
+                self.status = plugin.Status.CRITICAL
+
+        if not output:
+            for key, value in warn.items():
+                if stats[key] > value:
+                    output.append(
+                        "WARNING: %s CPU is %d%% for the last %d seconds"
+                        % (key, stats[key], abs(closest - now))
+                    )
+                    self.status = plugin.Status.WARN
+
+        if not output:
+            output = ["CPU Usage OK at %0.2f%%" % used]
+
+        for key in sorted(stats.keys()):
+            output.append("%s CPU usage: %0.2f%%" % (key, stats[key]))
+
+        self.message = "\n".join(output)
+        self.add_perf_multi({"cpu_%s" % x: stats[x] for x in stats})
 
 
 def run():
+    """Entry point from setup.py for installation of wrapper."""
     instance = Check()
     instance.main()
+
 
 if __name__ == "__main__":
     run()

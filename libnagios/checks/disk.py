@@ -23,45 +23,61 @@ Disk Total: {disk_total:,.3f} GB
 Disk Used: {disk_used:,.3f} GB ({disk_used_pct:.2f})
 """
 
+
 class Check(plugin.Plugin):
+    """Nagios plugin to perform Disk checks."""
 
     def cli(self):
+        """Add command line arguments specific to the plugin."""
         group = self.parser.add_mutually_exclusive_group()
-        group.add_argument("-p", "--percent",
+        group.add_argument(
+            "-p",
+            "--percent",
             dest="percent",
             action="store_true",
             default=False,
-            help="Warning/Critical values are a percentage (default)"
-            )
-        group.add_argument("-m", "--mega-bytes",
+            help="Warning/Critical values are a percentage (default)",
+        )
+        group.add_argument(
+            "-m",
+            "--mega-bytes",
             dest="mb",
             action="store_true",
             default=False,
-            help="Warning/Critical values are in Mega-Bytes"
-            )
-        group.add_argument("-g", "--giga-bytes",
+            help="Warning/Critical values are in Mega-Bytes",
+        )
+        group.add_argument(
+            "-g",
+            "--giga-bytes",
             dest="gb",
             action="store_true",
             default=False,
-            help="Warning/Critical values are in Giga-Bytes"
-            )
-        self.parser.add_argument("-w", "--warn",
+            help="Warning/Critical values are in Giga-Bytes",
+        )
+        self.parser.add_argument(
+            "-w",
+            "--warn",
             dest="warn",
             type=float,
             default=20.0,
             help="Amount of disk free to warn at",
-            )
-        self.parser.add_argument("-c", "--critical",
+        )
+        self.parser.add_argument(
+            "-c",
+            "--critical",
             dest="critical",
             type=float,
             default=10.0,
-            help="Amount of disk free to mark critical [Default: %0.2(default)f]",
-            )
-        self.parser.add_argument("disk",
+            help="Amount of disk free to mark critical "
+            "[Default: %0.2(default)f]",
+        )
+        self.parser.add_argument(
+            "disk",
             help="Directory path for disk to check",
-            )
+        )
 
     def execute(self):
+        """Execute the actual working parts of the plugin."""
         try:
             result = shutil.disk_usage(self.opts.disk)
         except OSError as err:
@@ -77,7 +93,7 @@ class Check(plugin.Plugin):
             "disk_free": result.free / (1024 * 1024 * 1024),
             "disk_free_pct": (result.free / result.total) * 100.0,
             "disk_used_pct": (result.used / result.total) * 100.0,
-            }
+        }
 
         if self.opts.mb or self.opts.gb:
             divisor = 1024 * 1024 if self.opts.mb else 1024 * 1024 * 1024
@@ -98,8 +114,10 @@ class Check(plugin.Plugin):
 
 
 def run():
+    """Entry point from setup.py for installation of wrapper."""
     instance = Check()
     instance.main()
+
 
 if __name__ == "__main__":
     run()
