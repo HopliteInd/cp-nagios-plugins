@@ -8,7 +8,7 @@ build-backend = "hatchling.build"
 name = "cp-nagios-plugins"
 description = "Cross Platform Nagios Plugins"
 readme = "README.md"
-license = "Apache 2.0"
+license = "Apache-2.0"
 authors = [
     { name = "Hoplite Industries, Inc.", email = "smichael@hopliteindustries.com" },
 ]
@@ -34,6 +34,16 @@ dependencies = [
 dynamic = [
     "version",
 ]
+
+[project.optional-dependencies]
+test = [
+	"sphinx",
+	"tox",
+	"black",
+	"pylint",
+	"flake8"
+]
+
 
 [project.scripts]
 check_cp_bitlocker = "libnagios.checks.bitlocker:run"
@@ -66,7 +76,7 @@ count = true
 max-line-length = 79
 
 [tool.pylint.'MESSAGES CONTROL']
-disable = C0330, C0326
+disable = ['C0330', 'C0326']
 
 
 [tool.black]
