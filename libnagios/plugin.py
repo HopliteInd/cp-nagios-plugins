@@ -183,7 +183,7 @@ class Plugin:
                 than 4k you may adjust ``limit`` to accommodate that.
 
         """
-        log = logging.getLogger(f"{__name__}.Plugin.finish" % __name__)
+        log = logging.getLogger(f"{__name__}.Plugin.finish")
         log.debug("(as_json=%s, limit=%s", repr(as_json), repr(limit))
         output = io.StringIO()
 
