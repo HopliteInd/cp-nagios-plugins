@@ -51,6 +51,7 @@ check_cp_cpu = "libnagios.checks.cpu:run"
 check_cp_disk = "libnagios.checks.disk:run"
 check_cp_load = "libnagios.checks.load:run"
 check_cp_swap = "libnagios.checks.swap:run"
+check_cp_ssh = "libnagios.checks.ssh:run"
 
 [project.urls]
 Homepage = "https://github.com/HopliteInd/cp-nagios-plugins"
