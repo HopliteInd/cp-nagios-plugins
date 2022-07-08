@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "cp-nagios-plugins"
 description = "Cross Platform Nagios Plugins"
-readme = "README.md"
+readme = "README.rst"
 license = "Apache-2.0"
 requires-python = ">=3.6"
 authors = [
@@ -39,12 +39,11 @@ dynamic = [
 ]
 
 [project.optional-dependencies]
-test = [
-	"sphinx",
-	"tox",
+lint = [
 	"black",
 	"pylint",
-	"flake8"
+	"flake8",
+	"isort",
 ]
 
 
@@ -63,8 +62,6 @@ Homepage = "https://github.com/HopliteInd/cp-nagios-plugins"
 path = "libnagios/__init__.py"
 
 [tool.hatch.build]
-ignore-vcs = true
-only-packages = true
 
 [tool.hatch.build.targets.sdist]
 include = [
@@ -75,7 +72,7 @@ packages = [
     "/libnagios",
 ]
 
-[tool.hatch.envs.style]
+[tool.hatch.envs.lint]
 detached = true
 dependencies = [
   "flake8",
@@ -83,16 +80,18 @@ dependencies = [
   "isort",
 ]
 
-[tool.hatch.envs.style.scripts]
+[tool.hatch.envs.lint.scripts]
 check = [
-  "flake8 .",
-  "black --check --diff .",
-  "isort --check-only --diff .",
+  "pylint libnagios",
+  "flake8 libnagios",
+  "black --check --diff libnagios",
+  "isort --check-only --diff libnagios",
 ]
 fmt = [
-  "isort .",
-  "black .",
-  "check",
+  "pylint libnagios",
+  "isort libnagios",
+  "black libnagios",
+  "isort libnagios",
 ]
 
 [tool.flake8]
