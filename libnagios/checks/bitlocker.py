@@ -45,9 +45,10 @@ class Check(plugin.Plugin):
                 self.opts.disk,
                 "-ProtectionAsErrorLevel",
             ]
+            # pylint: disable=subprocess-run-check
             exe = subprocess.run(cmd, capture_output=True)
         except OSError as err:
-            self.message = "Error gathering disk usage: %s" % err
+            self.message = f"Error gathering disk usage: {err}"
             self.status = plugin.Status.UNKNOWN
             return
 

@@ -73,6 +73,26 @@ packages = [
     "/libnagios",
 ]
 
+[tool.hatch.envs.style]
+detached = true
+dependencies = [
+  "flake8",
+  "black",
+  "isort",
+]
+
+[tool.hatch.envs.style.scripts]
+check = [
+  "flake8 .",
+  "black --check --diff .",
+  "isort --check-only --diff .",
+]
+fmt = [
+  "isort .",
+  "black .",
+  "check",
+]
+
 [tool.flake8]
 ignore = ['E203', 'D107']
 per-file-ignores = [
@@ -85,8 +105,11 @@ count = true
 [tool.pylint.FORMAT]
 max-line-length = 79
 
-[tool.pylint.'MESSAGES CONTROL']
-disable = ['C0330', 'C0326']
+[tool.pylint.messages_control]
+max-line-length = 79
+disable = [
+	"duplicate-code",
+	]
 
 
 [tool.black]

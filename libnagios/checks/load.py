@@ -62,17 +62,17 @@ class Check(plugin.Plugin):
         """Execute the actual working parts of the plugin."""
         try:
             stats = dict(zip(["one", "five", "fifteen"], psutil.getloadavg()))
-            if platform.system == "Windows":
+            if platform.system() == "Windows":
                 time.sleep(5.5)
                 stats = dict(
                     zip(["one", "five", "fifteen"], psutil.getloadavg())
                 )
         except OSError as err:
-            self.message = "Error gathering load average: %s" % err
+            self.message = f"Error gathering load average: {err}"
             self.status = plugin.Status.UNKNOWN
             return
 
-        self.add_perf_multi({"loadavg_%s" % x: stats[x] for x in stats})
+        self.add_perf_multi({f"loadavg_{x}": stats[x] for x in stats})
 
         output = {}
         for status, values in (
@@ -84,19 +84,20 @@ class Check(plugin.Plugin):
             if stats["one"] > one:
                 self.status = status
                 output[status].append(
-                    "1 min: %0.1f > %0.1f" % (stats["one"], one)
+                    "1 min: {stats['one']:.1f} > {one:.1f}"
                 )
             if stats["five"] > five:
                 self.status = status
                 output[status].append(
-                    "5 min: %0.1f > %0.1f" % (stats["five"], five)
+                    "5 min: {stats['five']:.1f} > {five:.1f}"
                 )
             if stats["fifteen"] > fifteen:
                 self.status = status
                 output[status].append(
-                    "15 min: %0.1f > %0.1f" % (stats["fifteen"], fifteen)
+                    "15 min: {stats['fifteen']:.1f} > {fifteen:.1f}"
                 )
 
+        # pylint: disable=consider-using-f-string
         stats["msg"] = "{one:.1f}, {five:.1f}, {fifteen:.1f}".format(**stats)
 
         # Order matters.  Highest criticality must be last

@@ -15,13 +15,11 @@
 
 """SSH network check."""
 
-import ipaddress
 import socket
 import time
 
 # 3rd party
 import paramiko
-
 
 from .. import plugin
 
@@ -30,6 +28,7 @@ Fingerprint: {fingerprint}
 Public Key: {pubkey}
 In {elapsed} seconds.
 """
+
 
 class Check(plugin.Plugin):
     """Nagios plugin to perform SSH connectivity check."""
@@ -43,7 +42,7 @@ class Check(plugin.Plugin):
             "--ipv4",
             dest="afinet",
             action="store_const",
-            const = socket.AF_INET,
+            const=socket.AF_INET,
             help="Only do IPv4",
         )
         group.add_argument(
@@ -51,7 +50,7 @@ class Check(plugin.Plugin):
             "--ipv6",
             dest="afinet",
             action="store_const",
-            const = socket.AF_INET6,
+            const=socket.AF_INET6,
             help="Only do IPv6",
         )
         self.parser.add_argument(
@@ -75,7 +74,7 @@ class Check(plugin.Plugin):
             dest="warn",
             type=float,
             default=5.0,
-            help="Seconds after which to warn [Default: %(default)0.2f]",
+            help="Go warning after X seconds [Default: %(default)0.2f]",
         )
         self.parser.add_argument(
             "-c",
@@ -83,16 +82,21 @@ class Check(plugin.Plugin):
             dest="critical",
             type=float,
             default=10.0,
-            help="Seconds after which to go critical [Default: %(default)0.2f]",
+            help="Go critical after X seconds [Default: %(default)0.2f]",
         )
 
     def execute(self):
         """Execute the actual working parts of the plugin."""
 
         try:
-            possible = socket.getaddrinfo(self.opts.host, self.opts.port, family=self.opts.afinet, type=socket.SOCK_STREAM)
+            possible = socket.getaddrinfo(
+                self.opts.host,
+                self.opts.port,
+                family=self.opts.afinet,
+                type=socket.SOCK_STREAM,
+            )
         except socket.gaierror as err:
-            self.message = "%s:%s %s" % (self.opts.host, self.opts.port,  str(err))
+            self.message = f"{self.opts.host}:{self.opts.port} {str(err)}"
             self.status = plugin.Status.CRITICAL
             return
 
@@ -119,32 +123,33 @@ class Check(plugin.Plugin):
                     type=key.get_name(),
                     fingerprint=key.get_fingerprint().hex(),
                     elapsed=elapsed,
-                    pubkey=key.get_base64()
-                    )
+                    pubkey=key.get_base64(),
+                )
 
                 # Check thresholds for timeouts
                 if elapsed > self.opts.warn:
-                    self.message = "Timeout after %0.2f seconds" % (elapsed)
+                    self.message = f"Timeout after {elapsed:.2f} seconds"
                     self.status = plugin.Status.WARN
                 if elapsed > self.opts.critical:
-                    self.message = "Timeout after %0.2f seconds" % (elapsed)
+                    self.message = f"Timeout after {elapsed:.2f} seconds"
                     self.status = plugin.Status.CRITICAL
             except paramiko.ssh_exception.SSHException as err:
-                self.message = "Error: %s" % str(err)
+                self.message = f"Error: {str(err)}"
                 self.status = plugin.Status.CRITICAL
-            except socket.timeout as err:
-                self.message = "Timeout after %0.2f seconds" % (elapsed)
+            except socket.timeout:
+                self.message = f"Timeout after {elapsed:.2f} seconds"
                 self.status = plugin.Status.CRITICAL
             except socket.gaierror as err:
-                self.message = "Socket error: %s" % err
+                self.message = f"Socket error: {err}"
                 self.status = plugin.Status.CRITICAL
             except OSError as err:
-                self.message = "Generic Socket error: %s" % err
+                self.message = f"Generic Socket error: {err}"
                 self.status = plugin.Status.CRITICAL
             finally:
                 elapsed = time.time() - start
                 self.add_perf_multi({"elapsed": round(time.time() - start, 3)})
-                return
+            return
+
 
 def run():
     """Entry point from setup.py for installation of wrapper."""

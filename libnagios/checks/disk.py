@@ -81,7 +81,7 @@ class Check(plugin.Plugin):
         try:
             result = shutil.disk_usage(self.opts.disk)
         except OSError as err:
-            self.message = "Error gathering disk usage: %s" % err
+            self.message = f"Error gathering disk usage: {err}"
             self.status = plugin.Status.UNKNOWN
             return
 

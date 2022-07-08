@@ -77,7 +77,7 @@ class Check(plugin.Plugin):
         try:
             result = psutil.swap_memory()
         except OSError as err:
-            self.message = "Error gathering disk usage: %s" % err
+            self.message = f"Error gathering disk usage: {err}"
             self.status = plugin.Status.UNKNOWN
             return
 

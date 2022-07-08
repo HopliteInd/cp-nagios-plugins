@@ -23,7 +23,6 @@ import sys
 import time
 import typing
 
-
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 
@@ -49,7 +48,7 @@ class Plugin:
     """
 
     def __init__(self):
-        log = logging.getLogger("%s.Plugin" % __name__)
+        log = logging.getLogger(f"{__name__}.Plugin")
         log.debug("Initilization")
 
         # Public variables
@@ -78,11 +77,10 @@ class Plugin:
     @message.setter
     def message(self, value):
         if not isinstance(value, str):
-            raise ValueError("'message' must be a 'str'" % (__name__))
+            raise ValueError("'message' must be a 'str'")
         if "|" in value:
             raise ValueError(
                 "'message' must not contain the pipe '|' character"
-                % (__name__)
             )
         self._message = value.strip()
 
@@ -98,8 +96,7 @@ class Plugin:
     def status(self, value):
         if not isinstance(value, Status):
             raise ValueError(
-                "'status' must be an instance of '%s.Status'"
-                % (__name__, __name__)
+                f"'status' must be an instance of '{__name__}.Status'"
             )
         self._status = value
 
@@ -121,17 +118,14 @@ class Plugin:
             value (str, float, or int): Performance metric value to record.
 
         """
-        log = logging.getLogger("%s.Plugin.add_perf" % __name__)
+        log = logging.getLogger(f"{__name__}.Plugin.add_perf")
         log.debug("%s=%s", repr(key), repr(value))
         if not isinstance(key, str):
-            raise ValueError(
-                "When adding perf data 'key' must be a 'str'" % (__name__)
-            )
+            raise ValueError("When adding perf data 'key' must be a 'str'")
 
-        if not (isinstance(key, (str, float, int))):
+        if not isinstance(key, (str, float, int)):
             raise ValueError(
-                "For key=%s 'value' must in ('str', 'float', 'int')"
-                % (repr(key), __name__)
+                f"For key={repr(key)} 'value' must in ('str', 'float', 'int')"
             )
 
         self._perfdata[key] = value
@@ -161,13 +155,12 @@ class Plugin:
             reserved keys.
         """
 
-        log = logging.getLogger("%s.Plugin.add_perf_multi" % __name__)
-        log.debug("data is %s", type(data))
+        log = logging.getLogger(f"{__name__}.Plugin.add_perf_multi")
+        log.debug("data is {type(data)}")
 
         if not isinstance(data, dict):
             raise ValueError(
                 "When adding multiple values 'data' must be a 'dict'"
-                % (__name__)
             )
 
         for key, value in data.items():
@@ -190,14 +183,14 @@ class Plugin:
                 than 4k you may adjust ``limit`` to accommodate that.
 
         """
-        log = logging.getLogger("%s.Plugin.finish" % __name__)
+        log = logging.getLogger(f"{__name__}.Plugin.finish" % __name__)
         log.debug("(as_json=%s, limit=%s", repr(as_json), repr(limit))
         output = io.StringIO()
 
         if self._message:
             output.write(self._message)
         else:
-            output.write("CRITICAL %s.Plugin.message udefined...." % __name__)
+            output.write(f"CRITICAL {__name__}.Plugin.message udefined....")
             self._status = Status.CRITICAL
         if self._perfdata:
             output.write("|")
@@ -207,7 +200,7 @@ class Plugin:
             else:
                 perfdata = []
                 for key, value in self._perfdata.items():
-                    perfdata.append("%s=%s" % (key, str(value)))
+                    perfdata.append(f"{key}={str(value)}")
                 output.write("\n".join(perfdata))
         output.seek(0)
         sys.stdout.write(output.read(limit))
@@ -297,8 +290,8 @@ class Plugin:
         self._parse_args()
         start = time.time()
         self.execute()
-        end = time.time()
+        runtime = time.time() - start
         self.add_perf("epoch", start)
-        self.add_perf("runtime", "%0.2f" % (end - start))
+        self.add_perf("runtime", f"{runtime:.2f}")
         self.add_perf("state", self.status.name)
         self.finish(as_json=self.opts.as_json)
