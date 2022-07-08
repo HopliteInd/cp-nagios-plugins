@@ -30,6 +30,7 @@ classifiers = [
 ]
 dependencies = [
     "psutil>=5.6.2",
+    "paramiko",
 ]
 dynamic = [
     "version",
@@ -65,6 +66,10 @@ only-packages = true
 
 [tool.hatch.build.targets.sdist]
 include = [
+    "/libnagios",
+]
+[tool.hatch.build.targets.wheel]
+packages = [
     "/libnagios",
 ]
 
