@@ -31,6 +31,14 @@ class Check(plugin.Plugin):
         """Add command line arguments specific to the plugin."""
         group = self.parser.add_mutually_exclusive_group()
         group.add_argument(
+            "-z",
+            "--zero-ok",
+            dest="zero_ok",
+            action="store_true",
+            default=False,
+            help="Naving no swap is ok. Default no swap is critical.",
+        )
+        group.add_argument(
             "-p",
             "--percent",
             dest="percent",
@@ -79,6 +87,16 @@ class Check(plugin.Plugin):
         except OSError as err:
             self.message = f"Error gathering disk usage: {err}"
             self.status = plugin.Status.UNKNOWN
+            return
+
+        # Handle zero swap detected
+        if int(result.total) == 0:
+            self.message = "No swap found"
+            self.status = (
+                plugin.Status.OK
+                if self.opts.zero_ok
+                else plugin.Status.CRITICAL
+            )
             return
 
         # Stats and stuff
