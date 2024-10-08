@@ -20,8 +20,8 @@ import time
 # 3rd party
 import psutil
 
-# Local
-from .. import plugin
+# Local imports
+import libnagios
 
 TEMPLATE = """Load {status} :: {msg}
 One minute:      {one:.1f}
@@ -30,7 +30,7 @@ Fifteen minute:  {fifteen:.1f}
 """
 
 
-class Check(plugin.Plugin):
+class Check(libnagios.plugin.Plugin):
     """Nagios plugin to perform Load checks."""
 
     def cli(self):
@@ -69,23 +69,21 @@ class Check(plugin.Plugin):
                 )
         except OSError as err:
             self.message = f"Error gathering load average: {err}"
-            self.status = plugin.Status.UNKNOWN
+            self.status = libnagios.plugin.Status.UNKNOWN
             return
 
         self.add_perf_multi({f"loadavg_{x}": stats[x] for x in stats})
 
         output = {}
         for status, values in (
-            (plugin.Status.WARN, self.opts.warn),
-            (plugin.Status.CRITICAL, self.opts.critical),
+            (libnagios.plugin.Status.WARN, self.opts.warn),
+            (libnagios.plugin.Status.CRITICAL, self.opts.critical),
         ):
             output[status] = []
             one, five, fifteen = values
             if stats["one"] > one:
                 self.status = status
-                output[status].append(
-                    "1 min: {stats['one']:.1f} > {one:.1f}"
-                )
+                output[status].append("1 min: {stats['one']:.1f} > {one:.1f}")
             if stats["five"] > five:
                 self.status = status
                 output[status].append(
@@ -101,7 +99,10 @@ class Check(plugin.Plugin):
         stats["msg"] = "{one:.1f}, {five:.1f}, {fifteen:.1f}".format(**stats)
 
         # Order matters.  Highest criticality must be last
-        for status in (plugin.Status.WARN, plugin.Status.CRITICAL):
+        for status in (
+            libnagios.plugin.Status.WARN,
+            libnagios.plugin.Status.CRITICAL,
+        ):
             if output[status]:
                 self.status = status
                 stats["msg"] = " :: ".join(output[status])

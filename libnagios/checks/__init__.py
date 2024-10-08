@@ -12,11 +12,3 @@
 # limitations under the License.
 
 """Plugin script stubs."""
-
-__all__ = [
-    "bitlocker",
-    "cpu",
-    "disk",
-    "load",
-    "swap",
-]

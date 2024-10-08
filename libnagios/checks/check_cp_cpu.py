@@ -25,7 +25,8 @@ import time
 # 3rd party
 import psutil
 
-from .. import plugin
+# Local imports
+import libnagios
 
 TEMPLATE = """CPU Usage  {swap_free:,.3f} GB ({swap_free_pct:.2%})
 Swap Total: {swap_total:,.3f} GB
@@ -43,7 +44,7 @@ class ReturnErr(Exception):
 
 
 # pylint: disable=consider-using-generator
-class Check(plugin.Plugin):
+class Check(libnagios.plugin.Plugin):
     """Nagios plugin to perform CPU checks."""
 
     def __init__(self, *args, **kwargs):
@@ -109,7 +110,8 @@ class Check(plugin.Plugin):
             statedb = dbm.open(self.opts.state, "c")
         except dbm.error as err:
             raise ReturnErr(
-                f"Failed to open state db: {err}", plugin.Status.UNKNOWN
+                f"Failed to open state db: {err}",
+                libnagios.plugin.Status.UNKNOWN,
             ) from None
 
         now = int(time.time())
@@ -141,7 +143,7 @@ class Check(plugin.Plugin):
 
         if closest is None:
             raise ReturnErr(
-                "Not enough data points yet..", plugin.Status.UNKNOWN
+                "Not enough data points yet..", libnagios.plugin.Status.UNKNOWN
             ) from None
 
         history = json.loads(statedb[str(closest)])
@@ -166,13 +168,13 @@ class Check(plugin.Plugin):
                         ", ".join(current.keys()),
                     )
                 )
-                self.status = plugin.Status.UNKNOWN
+                self.status = libnagios.plugin.Status.UNKNOWN
                 return
             try:
                 warn[key] = float(value)
             except ValueError:
                 self.message = f"Warn value for {key} must be a float"
-                self.status = plugin.Status.UNKNOWN
+                self.status = libnagios.plugin.Status.UNKNOWN
                 return
 
         for key, value in self.opts.critical:
@@ -185,13 +187,13 @@ class Check(plugin.Plugin):
                         ", ".join(current.keys()),
                     )
                 )
-                self.status = plugin.Status.UNKNOWN
+                self.status = libnagios.plugin.Status.UNKNOWN
                 return
             try:
                 critical[key] = float(value)
             except ValueError:
                 self.message = f"Warn value for {key} must be a float"
-                self.status = plugin.Status.UNKNOWN
+                self.status = libnagios.plugin.Status.UNKNOWN
                 return
 
         now = time.time()
@@ -230,7 +232,7 @@ class Check(plugin.Plugin):
                     f"CRITICAL: {key} CPU is {stats[key]}% for the last "
                     f"{seconds} seconds"
                 )
-                self.status = plugin.Status.CRITICAL
+                self.status = libnagios.plugin.Status.CRITICAL
 
         if not output:
             for key, value in warn.items():
@@ -239,7 +241,7 @@ class Check(plugin.Plugin):
                         f"WARNING: {key} CPU is {stats[key]}% for the last "
                         f"{seconds} seconds"
                     )
-                    self.status = plugin.Status.WARN
+                    self.status = libnagios.plugin.Status.WARN
 
         if not output:
             output = [f"CPU Usage OK at {used:.2f}%"]

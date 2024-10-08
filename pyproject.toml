@@ -48,12 +48,13 @@ lint = [
 
 
 [project.scripts]
-check_cp_bitlocker = "libnagios.checks.bitlocker:run"
-check_cp_cpu = "libnagios.checks.cpu:run"
-check_cp_disk = "libnagios.checks.disk:run"
-check_cp_load = "libnagios.checks.load:run"
-check_cp_swap = "libnagios.checks.swap:run"
-check_cp_ssh = "libnagios.checks.ssh:run"
+check_cp_bitlocker = "libnagios.checks.check_cp_bitlocker:run"
+check_cp_cpu = "libnagios.checks.check_cp_cpu:run"
+check_cp_disk = "libnagios.checks.check_cp_disk:run"
+check_cp_load = "libnagios.checks.check_cp_load:run"
+check_cp_swap = "libnagios.checks.check_cp_swap:run"
+check_cp_ssh = "libnagios.checks.check_cp_ssh:run"
+check_cp_procs = "libnagios.checks.check_cp_procs:run"
 
 [project.urls]
 Homepage = "https://github.com/HopliteInd/cp-nagios-plugins"

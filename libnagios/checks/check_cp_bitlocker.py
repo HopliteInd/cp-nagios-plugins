@@ -17,14 +17,14 @@
 import os.path
 import subprocess
 
-from .. import plugin
+import libnagios
 
 TEMPLATE = """Disk {disk} :: Bitlocker State: {state}
 {stdout}
 """
 
 
-class Check(plugin.Plugin):
+class Check(libnagios.plugin.Plugin):
     """Nagios plugin to perform Disk checks."""
 
     def cli(self):
@@ -49,7 +49,7 @@ class Check(plugin.Plugin):
             exe = subprocess.run(cmd, capture_output=True)
         except OSError as err:
             self.message = f"Error gathering disk usage: {err}"
-            self.status = plugin.Status.UNKNOWN
+            self.status = libnagios.plugin.Status.UNKNOWN
             return
 
         # Stats and stuff
@@ -59,9 +59,9 @@ class Check(plugin.Plugin):
             "stdout": exe.stdout.decode("utf-8"),
         }
 
-        self.status = plugin.Status.CRITICAL
+        self.status = libnagios.plugin.Status.CRITICAL
         if exe.returncode == 0:
-            self.status = plugin.Status.OK
+            self.status = libnagios.plugin.Status.OK
 
         self.message = TEMPLATE.strip().format(**stats)
 

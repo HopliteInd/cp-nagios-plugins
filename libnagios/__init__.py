@@ -13,9 +13,12 @@
 
 """Nagios plugins library."""
 
+import args
+import plugin
+
 __all__ = [
+    "args",
     "plugin",
-    "checks",
 ]
 
-__version__ = "0.6"
+__version__ = "0.7"

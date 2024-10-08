@@ -18,10 +18,11 @@
 import socket
 import time
 
-# 3rd party
+# 3rd party imports
 import paramiko
 
-from .. import plugin
+# local imports
+import libnagios
 
 TEMPLATE = """{bit} bit {type} ssh2 connection established
 Fingerprint: {fingerprint}
@@ -30,7 +31,7 @@ In {elapsed} seconds.
 """
 
 
-class Check(plugin.Plugin):
+class Check(libnagios.plugin.Plugin):
     """Nagios plugin to perform SSH connectivity check."""
 
     def cli(self):
@@ -97,21 +98,21 @@ class Check(plugin.Plugin):
             )
         except socket.gaierror as err:
             self.message = f"{self.opts.host}:{self.opts.port} {str(err)}"
-            self.status = plugin.Status.CRITICAL
+            self.status = libnagios.plugin.Status.CRITICAL
             return
 
-        for (family, sock_type, proto, _, sockaddr) in possible:
+        for family, sock_type, proto, _, sockaddr in possible:
             start = time.time()
             sock = socket.socket(family=family, type=sock_type, proto=proto)
             sock.settimeout(self.opts.critical)
             try:
-                self.status = plugin.Status.OK
+                self.status = libnagios.plugin.Status.OK
                 sock.connect(sockaddr)
                 conn = paramiko.transport.Transport(sock)
                 conn.start_client(timeout=self.opts.critical)
                 if not conn.is_active():
                     self.message = "SSH session inactive error"
-                    self.status = plugin.Status.CRITICAL
+                    self.status = libnagios.plugin.Status.CRITICAL
 
                 key = conn.get_remote_server_key()
                 conn.close()
@@ -129,22 +130,22 @@ class Check(plugin.Plugin):
                 # Check thresholds for timeouts
                 if elapsed > self.opts.warn:
                     self.message = f"Timeout after {elapsed:.2f} seconds"
-                    self.status = plugin.Status.WARN
+                    self.status = libnagios.plugin.Status.WARN
                 if elapsed > self.opts.critical:
                     self.message = f"Timeout after {elapsed:.2f} seconds"
-                    self.status = plugin.Status.CRITICAL
+                    self.status = libnagios.plugin.Status.CRITICAL
             except paramiko.ssh_exception.SSHException as err:
                 self.message = f"Error: {str(err)}"
-                self.status = plugin.Status.CRITICAL
+                self.status = libnagios.plugin.Status.CRITICAL
             except socket.timeout:
                 self.message = f"Timeout after {elapsed:.2f} seconds"
-                self.status = plugin.Status.CRITICAL
+                self.status = libnagios.plugin.Status.CRITICAL
             except socket.gaierror as err:
                 self.message = f"Socket error: {err}"
-                self.status = plugin.Status.CRITICAL
+                self.status = libnagios.plugin.Status.CRITICAL
             except OSError as err:
                 self.message = f"Generic Socket error: {err}"
-                self.status = plugin.Status.CRITICAL
+                self.status = libnagios.plugin.Status.CRITICAL
             finally:
                 elapsed = time.time() - start
                 self.add_perf_multi({"elapsed": round(time.time() - start, 3)})

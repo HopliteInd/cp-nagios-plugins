@@ -25,6 +25,24 @@ import typing
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 
+RANGE_DOC = """
+RANGES
+=======
+
+RANGEs are prefixed with @ and specified 'min:max' or 'min:' or ':max'
+(or 'max'). If specified 'max:min', a warning status will be generated
+if the count is inside the specified range
+
+Ranges can also be specified as a single value. This value represents
+the upper bounds inclusive.  If a value is
+
+This plugin checks the number of currently running processes and
+generates WARNING or CRITICAL states if the process count is outside
+the specified threshold ranges. The process count can be filtered by
+process owner, parent process PID, current state (e.g., 'Z'), or may
+be the total number of running processes
+      """
+
 
 class Status(enum.Enum):
     """Nagios statuses."""
@@ -46,6 +64,8 @@ class Plugin:
             method.
 
     """
+
+    RANGE_SPEC = False
 
     def __init__(self):
         log = logging.getLogger(f"{__name__}.Plugin")
@@ -233,7 +253,12 @@ class Plugin:
         )
         session_id = os.getenv("SESSION_ID", random_session)
 
-        self.parser = argparse.ArgumentParser()
+        if self.RANGE_SPEC:
+
+            self.parser = argparse.ArgumentParser()
+        else:
+            self.parser = argparse.ArgumentParser()
+
         self.parser.add_argument(
             "--debug",
             dest="debug",

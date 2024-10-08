@@ -14,22 +14,32 @@
 
 """Disk checks."""
 
-import shutil
+# 3rd party imports
+import psutil
 
-from .. import plugin
+# local imports
+import libnagios
 
-TEMPLATE = """Disk {disk} :: Free: {disk_free:,.3f} GB ({disk_free_pct:.2f})
-Disk Total: {disk_total:,.3f} GB
-Disk Used: {disk_used:,.3f} GB ({disk_used_pct:.2f})
+TEMPLATE = """Swap Free {state}: {swap_free:,.3f} GB ({swap_free_pct:.2f}%)
+Swap Total: {swap_total:,.3f} GB
+Swap Used: {swap_used:,.3f} GB ({swap_used_pct:.2f}%)
 """
 
 
-class Check(plugin.Plugin):
-    """Nagios plugin to perform Disk checks."""
+class Check(libnagios.plugin.Plugin):
+    """Nagios plugin to perform SWAP checks."""
 
     def cli(self):
         """Add command line arguments specific to the plugin."""
         group = self.parser.add_mutually_exclusive_group()
+        group.add_argument(
+            "-z",
+            "--zero-ok",
+            dest="zero_ok",
+            action="store_true",
+            default=False,
+            help="Naving no swap is ok. Default no swap is critical.",
+        )
         group.add_argument(
             "-p",
             "--percent",
@@ -60,7 +70,7 @@ class Check(plugin.Plugin):
             dest="warn",
             type=float,
             default=20.0,
-            help="Amount of disk free to warn at",
+            help="Amount of swap free to warn at [Default: %0.2(default)f]",
         )
         self.parser.add_argument(
             "-c",
@@ -68,31 +78,38 @@ class Check(plugin.Plugin):
             dest="critical",
             type=float,
             default=10.0,
-            help="Amount of disk free to mark critical "
+            help="Amount of swap free to mark critical "
             "[Default: %0.2(default)f]",
-        )
-        self.parser.add_argument(
-            "disk",
-            help="Directory path for disk to check",
         )
 
     def execute(self):
         """Execute the actual working parts of the plugin."""
         try:
-            result = shutil.disk_usage(self.opts.disk)
+            result = psutil.swap_memory()
         except OSError as err:
             self.message = f"Error gathering disk usage: {err}"
-            self.status = plugin.Status.UNKNOWN
+            self.status = libnagios.plugin.Status.UNKNOWN
+            return
+
+        # Handle zero swap detected
+        if int(result.total) == 0:
+            self.message = "No swap found"
+            self.status = (
+                libnagios.plugin.Status.OK
+                if self.opts.zero_ok
+                else libnagios.plugin.Status.CRITICAL
+            )
             return
 
         # Stats and stuff
         stats = {
-            "disk": self.opts.disk,
-            "disk_total": result.total / (1024 * 1024 * 1024),
-            "disk_used": result.used / (1024 * 1024 * 1024),
-            "disk_free": result.free / (1024 * 1024 * 1024),
-            "disk_free_pct": (result.free / result.total) * 100.0,
-            "disk_used_pct": (result.used / result.total) * 100.0,
+            "swap_total": result.total / (1024 * 1024 * 1024),
+            "swap_used": result.used / (1024 * 1024 * 1024),
+            "swap_free": result.free / (1024 * 1024 * 1024),
+            "swap_in": result.sin / (1024 * 1024 * 1024),
+            "swap_out": result.sout / (1024 * 1024 * 1024),
+            "swap_free_pct": (result.free / result.total) * 100.0,
+            "swap_used_pct": result.percent,
         }
 
         if self.opts.mb or self.opts.gb:
@@ -100,15 +117,16 @@ class Check(plugin.Plugin):
             free = result.free / divisor
         else:
             # Fallback to percentage
-            free = (result.free / result.total) * 100.0
+            free = stats["swap_free_pct"]
 
         if free < self.opts.critical:
-            self.status = plugin.Status.CRITICAL
+            self.status = libnagios.plugin.Status.CRITICAL
         elif free < self.opts.warn:
-            self.status = plugin.Status.WARN
+            self.status = libnagios.plugin.Status.WARN
         else:
-            self.status = plugin.Status.OK
+            self.status = libnagios.plugin.Status.OK
 
+        stats["state"] = self.status.name
         self.message = TEMPLATE.strip().format(**stats)
         self.add_perf_multi(stats)
 
