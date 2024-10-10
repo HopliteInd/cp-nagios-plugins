@@ -23,6 +23,9 @@ import sys
 import time
 import typing
 
+# Local imports
+from . import exceptions
+from . import types
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 RANGE_DOC = """
@@ -43,14 +46,6 @@ process owner, parent process PID, current state (e.g., 'Z'), or may
 be the total number of running processes
       """
 
-
-class Status(enum.Enum):
-    """Nagios statuses."""
-
-    OK = 0
-    WARN = 1
-    CRITICAL = 2
-    UNKNOWN = 3
 
 
 class Plugin:
@@ -76,7 +71,7 @@ class Plugin:
         self.opts = None
 
         self._message = None
-        self._status = Status.OK
+        self._status = types.Status.OK
         self._perfdata = {}
 
     @property
@@ -114,9 +109,9 @@ class Plugin:
 
     @status.setter
     def status(self, value):
-        if not isinstance(value, Status):
+        if not isinstance(value, types.Status):
             raise ValueError(
-                f"'status' must be an instance of '{__name__}.Status'"
+                f"'status' must be an instance of 'libnagios.types.Status'"
             )
         self._status = value
 
@@ -204,14 +199,14 @@ class Plugin:
 
         """
         log = logging.getLogger(f"{__name__}.Plugin.finish")
-        log.debug("(as_json=%s, limit=%s", repr(as_json), repr(limit))
+        log.debug("(as_json=%s, limit=%s)", repr(as_json), repr(limit))
         output = io.StringIO()
 
         if self._message:
             output.write(self._message)
         else:
             output.write(f"CRITICAL {__name__}.Plugin.message udefined....")
-            self._status = Status.CRITICAL
+            self._status = types.Status.CRITICAL
         if self._perfdata:
             output.write("|")
 
@@ -313,8 +308,39 @@ class Plugin:
 
         """
         self._parse_args()
+        handlers = []
+        # Set up stderr logging
+        stderr = logging.StreamHandler(stream=sys.stderr)
+        handlers.append(stderr)
+
+        # Set the defaults
+        fmt = "%(asctime)s %(levelname)s %(name)s: %(message)s"
+        level = logging.CRITICAL
+        args = {}
+
+        if self.opts.debug:
+            level = logging.DEBUG
+            if self.opts.debug_log:
+                args = {
+                    "filename": self.opts.debug_log,
+                    "filemode": "a",
+                }
+        elif self.opts.verbose:
+            level = logging.INFO
+        else:
+            fmt = "%(name)s: %(message)s"
+        logging.basicConfig(level=level, format=fmt, handlers=handlers, **args)
+        log = logging.getLogger()
+        log.setLevel(level)
+
+
         start = time.time()
-        self.execute()
+        try:
+            self.execute()
+        except exceptions.NagiosException as err:
+            self.message = err.message
+            self.add_perf_multi(err.perfdata)
+            self.status = err.status
         runtime = time.time() - start
         self.add_perf("epoch", start)
         self.add_perf("runtime", f"{runtime:.2f}")

@@ -106,7 +106,7 @@ class Range:
             log.debug("Inverse found: lval=%r rval=%r", lval, rval)
             self._inverse = True
             self._low_bounds = rval
-            self._high_bound = lval
+            self._high_bounds = lval
         elif lval <= rval:  # min: min:max or :max
             log.debug("Normal bounds found: lval=%r rval=%r", lval, rval)
             self._low_bounds = lval
@@ -127,23 +127,16 @@ class Range:
             f"{__name__}.{__class__.__name__}.__contains__"
         )
         log.debug(
-            "low=%r high=%r value=%r",
+            "low=%r high=%r value=%r inverse=%r",
             self._low_bounds,
             self._high_bounds,
             value,
+            self._inverse,
         )
         if not isinstance(value, self.CONV):
             raise TypeError("Comparison to invalid type {type(value)}")
-        log.debug(
-            "low=%r high=%r value=%r",
-            self._low_bounds,
-            self._high_bounds,
-            value,
-        )
 
         in_it = True
-        print(repr(self._high_bounds))
-        print(repr(value))
         if value > self._high_bounds:
             in_it = False
         if self._low_bounds > value:
@@ -167,15 +160,20 @@ class Range:
         """High bounds"""
         return self._high_bounds
 
+    @property
+    def inverse(self) -> int:
+        """Get the status of the inverse flag"""
+        return self._inverse
+
 
 class FRange(Range):
     """Floating point version of Range"""
 
     RE_RANGE = re.compile(
         "^@"
-        "(?P<lval>-?(?:[0-9]+[.])?[0-9]+)"
+        "(?P<lval>-?(?:[0-9]+[.])?[0-9]+)?"
         ":"
-        "(?P<rval>-?(?:[0-9]+[.])?[0-9]+)"
+        "(?P<rval>-?(?:[0-9]+[.])?[0-9]+)?"
         "$"
     )
     RE_SINGLE = re.compile("^(?:[0-9]+[.])?[0-9]+$")
