@@ -13,8 +13,8 @@
 
 """Nagios plugins library."""
 
-import args
-import plugin
+from . import args
+from . import plugin
 
 __all__ = [
     "args",

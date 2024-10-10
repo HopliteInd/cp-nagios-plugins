@@ -40,9 +40,9 @@ class Range:
 
     RE_RANGE = re.compile(
         "^@"
-        "(?P<lval>-?(?:[0-9]+[.])?[0-9]+)"
+        "(?P<lval>-?(?:[0-9]+[.])?[0-9]+)?"
         ":"
-        "(?P<rval>-?(?:[0-9]+[.])?[0-9]+)"
+        "(?P<rval>-?(?:[0-9]+[.])?[0-9]+)?"
         "$"
     )
     RE_SINGLE = re.compile("^[0-9]+$")
@@ -56,21 +56,31 @@ class Range:
         self._high_bounds = None
         self._inverse = False
 
+        log = logging.getLogger(f"{__name__}.{__class__.__name__}")
+        log.debug("Range Spec: %r", range_spec)
+
         found = False
         mobj = self.RE_RANGE.match(range_spec)
         if mobj:  # Range found
-            found = True
+            log.debug("Range found")
             self._range_parse(mobj)
+            found = True
 
         if not found:
             if self.RE_SINGLE.match(range_spec):
+                log.debug("Single value found")
+                self._low_bounds = self.CONV(0)
                 self._high_bounds = self.CONV(range_spec)
+                found = True
 
         if not found:
             raise ValueError(f"Invalid range spec detected: {range_spec}")
 
     def _range_parse(self, mobj: re.Match):
         """Parse ranges"""
+        log = logging.getLogger(
+            f"{__name__}.{__class__.__name__}._range_parse"
+        )
         try:
             lval = mobj.group("lval")
             if lval:
@@ -93,10 +103,12 @@ class Range:
             ) from None
 
         if lval > rval:  # max:min
+            log.debug("Inverse found: lval=%r rval=%r", lval, rval)
             self._inverse = True
             self._low_bounds = rval
             self._high_bound = lval
         elif lval <= rval:  # min: min:max or :max
+            log.debug("Normal bounds found: lval=%r rval=%r", lval, rval)
             self._low_bounds = lval
             self._high_bounds = rval
         else:
@@ -111,12 +123,31 @@ class Range:
 
         """
 
+        log = logging.getLogger(
+            f"{__name__}.{__class__.__name__}.__contains__"
+        )
+        log.debug(
+            "low=%r high=%r value=%r",
+            self._low_bounds,
+            self._high_bounds,
+            value,
+        )
         if not isinstance(value, self.CONV):
             raise TypeError("Comparison to invalid type {type(value)}")
+        log.debug(
+            "low=%r high=%r value=%r",
+            self._low_bounds,
+            self._high_bounds,
+            value,
+        )
 
-        in_it = False
-        if self._low_bounds >= value <= self._high_bounds:
-            in_it = True
+        in_it = True
+        print(repr(self._high_bounds))
+        print(repr(value))
+        if value > self._high_bounds:
+            in_it = False
+        if self._low_bounds > value:
+            in_it = False
         if self._inverse:
             in_it = not in_it
         return in_it
@@ -161,3 +192,7 @@ class FRange(Range):
     def high(self) -> float:
         """High bounds"""
         return self._high_bounds
+
+
+if __name__ == "__main__":
+    x = Range("1")
