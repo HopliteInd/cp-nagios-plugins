@@ -1,0 +1,3 @@
+#!/usr/bin/env python3
+import libnagios.checks.check_cp_procs
+libnagios.checks.check_cp_procs.run()
