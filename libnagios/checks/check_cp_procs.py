@@ -15,9 +15,7 @@
 
 """Disk checks."""
 
-import platform
 import pwd
-import time
 
 # 3rd party
 import psutil
@@ -31,7 +29,7 @@ TEMPLATE = """Processes {status} :: {prefix}{msg}{postfix}{range}"""
 class Check(libnagios.plugin.Plugin):
     """Nagios plugin to perform process checks."""
 
-    RANGE_SPEC = True
+    EPILOG=libnagios.doc.RANGE_DOC
 
     def cli(self):
         """Add command line arguments specific to the plugin."""
@@ -44,7 +42,7 @@ class Check(libnagios.plugin.Plugin):
             default=libnagios.args.Range("1"),
             help=(
                 "Processes outside the range spec flag warning. See range "
-                "spec above for details on what this means.  [Default: 1]"
+                "spec below for details on what this means.  [Default: 1]"
             ),
         )
         self.parser.add_argument(
@@ -56,13 +54,13 @@ class Check(libnagios.plugin.Plugin):
             default=libnagios.args.Range("1"),
             help=(
                 "Processes outside the range spec flag critical. See range "
-                "spec above for details on what this means.  [Default: 1]"
+                "spec below for details on what this means.  [Default: 1]"
             ),
         )
         self.parser.add_argument(
             "-m",
             "--metric",
-            choices=("PROCS", "VSZ", "RSS", "CPU", "ELAPSED"),
+            choices=("PROCS", "VSZ", "RSS"),
             default="PROCS",
             dest="metric",
             help=(
@@ -91,8 +89,18 @@ class Check(libnagios.plugin.Plugin):
             "--rss",
             dest="rss",
             metavar="<rss>",
+            type=int,
             default=None,
             help="Only scan for processes with RSS higher than indicated.",
+        )
+        self.parser.add_argument(
+            "-z",
+            "--vsz",
+            dest="vsz",
+            metavar="<vsz>",
+            type=int,
+            default=None,
+            help="Only scan for processes with VSZ higher than indicated.",
         )
 
     def process_procs(self, user: str | None, state: dict[str, str]):
@@ -112,9 +120,14 @@ class Check(libnagios.plugin.Plugin):
 
                 if user and proc.username() != user:
                     continue
+                meminfo = proc.memory_info()
 
-                if self.opts.rss is not None and proc.rss() < self.opts.rss:
+                if self.opts.rss is not None and meminfo.rss < self.opts.rss:
                     # Skip processes that don't meet the minimum RSS size
+                    continue
+
+                if self.opts.vsz is not None and meminfo.vms < self.opts.vsz:
+                    # Skip processes that don't meet the minimum VSZ size
                     continue
 
                 # increment various counters
@@ -144,15 +157,15 @@ class Check(libnagios.plugin.Plugin):
                 # Test for user being a uid
                 uid = int(self.opts.user)
                 user = pwd.getpwuid(uid).pw_name
-            except ValueError as err:
+            except ValueError:
                 # not a uid.  Must be a user name instead
                 try:
                     user = pwd.getpwnam(self.opts.user).pw_name
-                except KeyError as err:
+                except KeyError:
                     raise libnagios.exceptions.UnknownError(
                         f"Invalid user [{self.opts.user}]"
                     ) from None
-            except KeyError as err:
+            except KeyError:
                 raise libnagios.exceptions.UnknownError(
                     f"Invalid uid [{self.opts.user}]"
                 ) from None

@@ -14,38 +14,25 @@
 
 import argparse
 import base64
-import enum
 import io
 import json
 import logging
 import os
 import sys
+import textwrap
 import time
 import typing
 
+# 3rd party imports
+import rich.markdown
+import rich_argparse
+
 # Local imports
+from . import doc
 from . import exceptions
 from . import types
+
 logging.getLogger(__name__).addHandler(logging.NullHandler())
-
-RANGE_DOC = """
-RANGES
-=======
-
-RANGEs are prefixed with @ and specified 'min:max' or 'min:' or ':max'
-(or 'max'). If specified 'max:min', a warning status will be generated
-if the count is inside the specified range
-
-Ranges can also be specified as a single value. This value represents
-the upper bounds inclusive.  If a value is
-
-This plugin checks the number of currently running processes and
-generates WARNING or CRITICAL states if the process count is outside
-the specified threshold ranges. The process count can be filtered by
-process owner, parent process PID, current state (e.g., 'Z'), or may
-be the total number of running processes
-      """
-
 
 
 class Plugin:
@@ -60,7 +47,8 @@ class Plugin:
 
     """
 
-    RANGE_SPEC = False
+    DESCRIPTION = None
+    EPILOG = None
 
     def __init__(self):
         log = logging.getLogger(f"{__name__}.Plugin")
@@ -111,7 +99,7 @@ class Plugin:
     def status(self, value):
         if not isinstance(value, types.Status):
             raise ValueError(
-                f"'status' must be an instance of 'libnagios.types.Status'"
+                "'status' must be an instance of 'libnagios.types.Status'"
             )
         self._status = value
 
@@ -248,11 +236,21 @@ class Plugin:
         )
         session_id = os.getenv("SESSION_ID", random_session)
 
-        if self.RANGE_SPEC:
-
-            self.parser = argparse.ArgumentParser()
-        else:
-            self.parser = argparse.ArgumentParser()
+        epilog = (
+            rich.markdown.Markdown(self.EPILOG, style="argparse.text")
+            if self.EPILOG
+            else None
+        )
+        description = (
+            rich.markdown.Markdown(self.DESCRIPTION, style="argparse.text")
+            if self.DESCRIPTION
+            else None
+        )
+        self.parser = argparse.ArgumentParser(
+            formatter_class=rich_argparse.RichHelpFormatter,
+            description=description,
+            epilog=epilog,
+        )
 
         self.parser.add_argument(
             "--debug",
@@ -332,7 +330,6 @@ class Plugin:
         logging.basicConfig(level=level, format=fmt, handlers=handlers, **args)
         log = logging.getLogger()
         log.setLevel(level)
-
 
         start = time.time()
         try:

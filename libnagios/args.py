@@ -47,7 +47,7 @@ class Range:
     )
     RE_SINGLE = re.compile("^[0-9]+$")
     CONV = int
-    MIN = 1
+    MIN = 0
     MAX = 2**32 - 1
 
     def __init__(self, range_spec: str):
@@ -178,7 +178,7 @@ class FRange(Range):
     )
     RE_SINGLE = re.compile("^(?:[0-9]+[.])?[0-9]+$")
     CONV = float
-    MIN = 1.0
+    MIN = 0.0
     MAX = float(2**32 - 1)
 
     @property

@@ -21,14 +21,11 @@ logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 
 class NagiosException(Exception):
-    """Base exception for libnagios
-
-
-    """
+    """Base exception for libnagios"""
 
     STATUS = types.Status.UNKNOWN
 
-    def __init__(self, message: str,  perfdata: None | dict[str, any] = None):
+    def __init__(self, message: str, perfdata: None | dict[str, any] = None):
         self._message = message
         self._perfdata = perfdata
         super().__init__(message)
@@ -39,7 +36,7 @@ class NagiosException(Exception):
         return self._message
 
     @property
-    def perfdata(self) -> dict[str,any]:
+    def perfdata(self) -> dict[str, any]:
         """Performance data if set"""
         return {} if self._perfdata is None else self._perfdata
 
@@ -51,17 +48,23 @@ class NagiosException(Exception):
 
 class OKError(NagiosException):
     """Short circuit way to generate an OK status"""
+
     STATUS = types.Status.OK
+
 
 class WarnError(NagiosException):
     """Short circuit way to generate an WARN status"""
+
     STATUS = types.Status.WARN
+
 
 class CriticalError(NagiosException):
     """Short circuit way to generate an CRITICAL status"""
+
     STATUS = types.Status.WARN
+
 
 class UnknownError(NagiosException):
     """Raised when an UNKNOWN condition exists"""
-    STATUS = types.Status.UNKNOWN
 
+    STATUS = types.Status.UNKNOWN

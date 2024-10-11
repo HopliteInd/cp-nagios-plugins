@@ -111,7 +111,7 @@ class Check(libnagios.plugin.Plugin):
         except dbm.error as err:
             raise ReturnErr(
                 f"Failed to open state db: {err}",
-                libnagios.plugin.Status.UNKNOWN,
+                libnagios.types.Status.UNKNOWN,
             ) from None
 
         now = int(time.time())
@@ -143,7 +143,7 @@ class Check(libnagios.plugin.Plugin):
 
         if closest is None:
             raise ReturnErr(
-                "Not enough data points yet..", libnagios.plugin.Status.UNKNOWN
+                "Not enough data points yet..", libnagios.types.Status.UNKNOWN
             ) from None
 
         history = json.loads(statedb[str(closest)])
@@ -168,13 +168,13 @@ class Check(libnagios.plugin.Plugin):
                         ", ".join(current.keys()),
                     )
                 )
-                self.status = libnagios.plugin.Status.UNKNOWN
+                self.status = libnagios.types.Status.UNKNOWN
                 return
             try:
                 warn[key] = float(value)
             except ValueError:
                 self.message = f"Warn value for {key} must be a float"
-                self.status = libnagios.plugin.Status.UNKNOWN
+                self.status = libnagios.types.Status.UNKNOWN
                 return
 
         for key, value in self.opts.critical:
@@ -187,13 +187,13 @@ class Check(libnagios.plugin.Plugin):
                         ", ".join(current.keys()),
                     )
                 )
-                self.status = libnagios.plugin.Status.UNKNOWN
+                self.status = libnagios.types.Status.UNKNOWN
                 return
             try:
                 critical[key] = float(value)
             except ValueError:
                 self.message = f"Warn value for {key} must be a float"
-                self.status = libnagios.plugin.Status.UNKNOWN
+                self.status = libnagios.types.Status.UNKNOWN
                 return
 
         now = time.time()
@@ -232,7 +232,7 @@ class Check(libnagios.plugin.Plugin):
                     f"CRITICAL: {key} CPU is {stats[key]}% for the last "
                     f"{seconds} seconds"
                 )
-                self.status = libnagios.plugin.Status.CRITICAL
+                self.status = libnagios.types.Status.CRITICAL
 
         if not output:
             for key, value in warn.items():
@@ -241,7 +241,7 @@ class Check(libnagios.plugin.Plugin):
                         f"WARNING: {key} CPU is {stats[key]}% for the last "
                         f"{seconds} seconds"
                     )
-                    self.status = libnagios.plugin.Status.WARN
+                    self.status = libnagios.types.Status.WARN
 
         if not output:
             output = [f"CPU Usage OK at {used:.2f}%"]

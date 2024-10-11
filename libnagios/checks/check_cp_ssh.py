@@ -98,7 +98,7 @@ class Check(libnagios.plugin.Plugin):
             )
         except socket.gaierror as err:
             self.message = f"{self.opts.host}:{self.opts.port} {str(err)}"
-            self.status = libnagios.plugin.Status.CRITICAL
+            self.status = libnagios.types.Status.CRITICAL
             return
 
         for family, sock_type, proto, _, sockaddr in possible:
@@ -106,13 +106,13 @@ class Check(libnagios.plugin.Plugin):
             sock = socket.socket(family=family, type=sock_type, proto=proto)
             sock.settimeout(self.opts.critical)
             try:
-                self.status = libnagios.plugin.Status.OK
+                self.status = libnagios.types.Status.OK
                 sock.connect(sockaddr)
                 conn = paramiko.transport.Transport(sock)
                 conn.start_client(timeout=self.opts.critical)
                 if not conn.is_active():
                     self.message = "SSH session inactive error"
-                    self.status = libnagios.plugin.Status.CRITICAL
+                    self.status = libnagios.types.Status.CRITICAL
 
                 key = conn.get_remote_server_key()
                 conn.close()
@@ -130,22 +130,22 @@ class Check(libnagios.plugin.Plugin):
                 # Check thresholds for timeouts
                 if elapsed > self.opts.warn:
                     self.message = f"Timeout after {elapsed:.2f} seconds"
-                    self.status = libnagios.plugin.Status.WARN
+                    self.status = libnagios.types.Status.WARN
                 if elapsed > self.opts.critical:
                     self.message = f"Timeout after {elapsed:.2f} seconds"
-                    self.status = libnagios.plugin.Status.CRITICAL
+                    self.status = libnagios.types.Status.CRITICAL
             except paramiko.ssh_exception.SSHException as err:
                 self.message = f"Error: {str(err)}"
-                self.status = libnagios.plugin.Status.CRITICAL
+                self.status = libnagios.types.Status.CRITICAL
             except socket.timeout:
                 self.message = f"Timeout after {elapsed:.2f} seconds"
-                self.status = libnagios.plugin.Status.CRITICAL
+                self.status = libnagios.types.Status.CRITICAL
             except socket.gaierror as err:
                 self.message = f"Socket error: {err}"
-                self.status = libnagios.plugin.Status.CRITICAL
+                self.status = libnagios.types.Status.CRITICAL
             except OSError as err:
                 self.message = f"Generic Socket error: {err}"
-                self.status = libnagios.plugin.Status.CRITICAL
+                self.status = libnagios.types.Status.CRITICAL
             finally:
                 elapsed = time.time() - start
                 self.add_perf_multi({"elapsed": round(time.time() - start, 3)})

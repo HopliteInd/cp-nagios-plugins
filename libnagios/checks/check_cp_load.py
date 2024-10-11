@@ -70,15 +70,15 @@ class Check(libnagios.plugin.Plugin):
                 )
         except OSError as err:
             self.message = f"Error gathering load average: {err}"
-            self.status = libnagios.plugin.Status.UNKNOWN
+            self.status = libnagios.types.Status.UNKNOWN
             return
 
         self.add_perf_multi({f"loadavg_{x}": stats[x] for x in stats})
 
         output = {}
         for status, values in (
-            (libnagios.plugin.Status.WARN, self.opts.warn),
-            (libnagios.plugin.Status.CRITICAL, self.opts.critical),
+            (libnagios.types.Status.WARN, self.opts.warn),
+            (libnagios.types.Status.CRITICAL, self.opts.critical),
         ):
             output[status] = []
             one, five, fifteen = values
@@ -101,8 +101,8 @@ class Check(libnagios.plugin.Plugin):
 
         # Order matters.  Highest criticality must be last
         for status in (
-            libnagios.plugin.Status.WARN,
-            libnagios.plugin.Status.CRITICAL,
+            libnagios.types.Status.WARN,
+            libnagios.types.Status.CRITICAL,
         ):
             if output[status]:
                 self.status = status

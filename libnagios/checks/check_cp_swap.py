@@ -89,16 +89,16 @@ class Check(libnagios.plugin.Plugin):
             result = psutil.swap_memory()
         except OSError as err:
             self.message = f"Error gathering disk usage: {err}"
-            self.status = libnagios.plugin.Status.UNKNOWN
+            self.status = libnagios.types.Status.UNKNOWN
             return
 
         # Handle zero swap detected
         if int(result.total) == 0:
             self.message = "No swap found"
             self.status = (
-                libnagios.plugin.Status.OK
+                libnagios.types.Status.OK
                 if self.opts.zero_ok
-                else libnagios.plugin.Status.CRITICAL
+                else libnagios.types.Status.CRITICAL
             )
             return
 
@@ -121,11 +121,11 @@ class Check(libnagios.plugin.Plugin):
             free = stats["swap_free_pct"]
 
         if free < self.opts.critical:
-            self.status = libnagios.plugin.Status.CRITICAL
+            self.status = libnagios.types.Status.CRITICAL
         elif free < self.opts.warn:
-            self.status = libnagios.plugin.Status.WARN
+            self.status = libnagios.types.Status.WARN
         else:
-            self.status = libnagios.plugin.Status.OK
+            self.status = libnagios.types.Status.OK
 
         stats["state"] = self.status.name
         self.message = TEMPLATE.strip().format(**stats)

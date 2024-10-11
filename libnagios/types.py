@@ -14,6 +14,7 @@
 
 import enum
 
+
 class Status(enum.Enum):
     """Nagios statuses."""
 

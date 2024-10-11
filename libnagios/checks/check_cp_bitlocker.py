@@ -50,7 +50,7 @@ class Check(libnagios.plugin.Plugin):
             exe = subprocess.run(cmd, capture_output=True)
         except OSError as err:
             self.message = f"Error gathering disk usage: {err}"
-            self.status = libnagios.plugin.Status.UNKNOWN
+            self.status = libnagios.types.Status.UNKNOWN
             return
 
         # Stats and stuff
@@ -60,9 +60,9 @@ class Check(libnagios.plugin.Plugin):
             "stdout": exe.stdout.decode("utf-8"),
         }
 
-        self.status = libnagios.plugin.Status.CRITICAL
+        self.status = libnagios.types.Status.CRITICAL
         if exe.returncode == 0:
-            self.status = libnagios.plugin.Status.OK
+            self.status = libnagios.types.Status.OK
 
         self.message = TEMPLATE.strip().format(**stats)
 

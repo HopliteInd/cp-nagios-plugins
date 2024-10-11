@@ -84,7 +84,7 @@ class Check(libnagios.plugin.Plugin):
             result = shutil.disk_usage(self.opts.disk)
         except OSError as err:
             self.message = f"Error gathering disk usage: {err}"
-            self.status = libnagios.plugin.Status.UNKNOWN
+            self.status = libnagios.types.Status.UNKNOWN
             return
 
         # Stats and stuff
@@ -105,11 +105,11 @@ class Check(libnagios.plugin.Plugin):
             free = (result.free / result.total) * 100.0
 
         if free < self.opts.critical:
-            self.status = libnagios.plugin.Status.CRITICAL
+            self.status = libnagios.types.Status.CRITICAL
         elif free < self.opts.warn:
-            self.status = libnagios.plugin.Status.WARN
+            self.status = libnagios.types.Status.WARN
         else:
-            self.status = libnagios.plugin.Status.OK
+            self.status = libnagios.types.Status.OK
 
         self.message = TEMPLATE.strip().format(**stats)
         self.add_perf_multi(stats)
