@@ -16,12 +16,12 @@ MAXF = float(2**32 - 1)
 
 
 class TestArgsRange(unittest.TestCase):
-    def test_single_args(self):
-        one = libnagios.args.Range("1")
+    def test_single_utils(self):
+        one = libnagios.utils.Range("1")
         self.assertTrue(1 in one)
         self.assertFalse(2 in one)
 
-        ten = libnagios.args.Range("10")
+        ten = libnagios.utils.Range("10")
         self.assertTrue(1 in ten)
         self.assertTrue(2 in ten)
         self.assertTrue(10 in ten)
@@ -29,8 +29,8 @@ class TestArgsRange(unittest.TestCase):
         self.assertFalse(-1 in ten)
         self.assertFalse(11 in ten)
 
-    def test_range_both_args(self):
-        t_range = libnagios.args.Range("@1:10")
+    def test_range_both_utils(self):
+        t_range = libnagios.utils.Range("@1:10")
         self.assertTrue(1 in t_range)
         self.assertTrue(5 in t_range)
         self.assertTrue(10 in t_range)
@@ -40,8 +40,8 @@ class TestArgsRange(unittest.TestCase):
         self.assertTrue(t_range.low == 1)
         self.assertTrue(t_range.high == 10)
 
-    def test_range_high_args(self):
-        t_range = libnagios.args.Range("@:10")
+    def test_range_high_utils(self):
+        t_range = libnagios.utils.Range("@:10")
         self.assertTrue(1 in t_range)
         self.assertTrue(5 in t_range)
         self.assertTrue(10 in t_range)
@@ -51,8 +51,8 @@ class TestArgsRange(unittest.TestCase):
         self.assertTrue(t_range.low == 1)
         self.assertTrue(t_range.high == 10)
 
-    def test_range_low_args(self):
-        t_range = libnagios.args.Range("@10:")
+    def test_range_low_utils(self):
+        t_range = libnagios.utils.Range("@10:")
         self.assertFalse(1 in t_range)
         self.assertFalse(5 in t_range)
         self.assertTrue(10 in t_range)
@@ -63,8 +63,8 @@ class TestArgsRange(unittest.TestCase):
         self.assertTrue(t_range.low == 10)
         self.assertTrue(t_range.high == MAX)
 
-    def test_range_no_args(self):
-        t_range = libnagios.args.Range("@:")
+    def test_range_no_utils(self):
+        t_range = libnagios.utils.Range("@:")
         self.assertTrue(1 in t_range)
         self.assertTrue(5 in t_range)
         self.assertTrue(10 in t_range)
@@ -75,8 +75,8 @@ class TestArgsRange(unittest.TestCase):
         self.assertTrue(t_range.low == 1)
         self.assertTrue(t_range.high == MAX)
 
-    def test_range_negative_args(self):
-        t_range = libnagios.args.Range("@-10:12")
+    def test_range_negative_utils(self):
+        t_range = libnagios.utils.Range("@-10:12")
         self.assertTrue(1 in t_range)
         self.assertTrue(5 in t_range)
         self.assertTrue(10 in t_range)
@@ -90,8 +90,8 @@ class TestArgsRange(unittest.TestCase):
         self.assertTrue(t_range.low == -10)
         self.assertTrue(t_range.high == 12)
 
-    def test_inverse_args(self):
-        t_range = libnagios.args.Range("@10:1")
+    def test_inverse_utils(self):
+        t_range = libnagios.utils.Range("@10:1")
         self.assertFalse(1 in t_range)
         self.assertFalse(5 in t_range)
         self.assertFalse(10 in t_range)
@@ -101,22 +101,22 @@ class TestArgsRange(unittest.TestCase):
         self.assertTrue(t_range.low == 1)
         self.assertTrue(t_range.high == 10)
 
-    def test_no_num_args(self):
+    def test_no_num_utils(self):
         with self.assertRaises(ValueError):
-            t_range = libnagios.args.Range("@a:b")
+            t_range = libnagios.utils.Range("@a:b")
 
 
 class TestArgsFRange(unittest.TestCase):
-    def test_single_args(self):
-        one = libnagios.args.FRange("1")
+    def test_single_utils(self):
+        one = libnagios.utils.FRange("1")
         self.assertTrue(1.0 in one)
         self.assertFalse(2.0 in one)
 
-        one = libnagios.args.FRange("1.0")
+        one = libnagios.utils.FRange("1.0")
         self.assertTrue(1.0 in one)
         self.assertFalse(2.0 in one)
 
-        ten = libnagios.args.FRange("10.0")
+        ten = libnagios.utils.FRange("10.0")
         self.assertTrue(1.0 in ten)
         self.assertTrue(2.0 in ten)
         self.assertTrue(10.0 in ten)
@@ -124,8 +124,8 @@ class TestArgsFRange(unittest.TestCase):
         self.assertFalse(-1.0 in ten)
         self.assertFalse(11.0 in ten)
 
-    def test_range_both_args(self):
-        t_range = libnagios.args.FRange("@1:10")
+    def test_range_both_utils(self):
+        t_range = libnagios.utils.FRange("@1:10")
         self.assertTrue(1.0 in t_range)
         self.assertTrue(5.0 in t_range)
         self.assertTrue(10.0 in t_range)
@@ -135,8 +135,8 @@ class TestArgsFRange(unittest.TestCase):
         self.assertTrue(t_range.low == 1.0)
         self.assertTrue(t_range.high == 10.0)
 
-    def test_range_high_args(self):
-        t_range = libnagios.args.FRange("@:10")
+    def test_range_high_utils(self):
+        t_range = libnagios.utils.FRange("@:10")
         self.assertTrue(1.0 in t_range)
         self.assertTrue(5.0 in t_range)
         self.assertTrue(10.0 in t_range)
@@ -146,8 +146,8 @@ class TestArgsFRange(unittest.TestCase):
         self.assertTrue(t_range.low == 1.0)
         self.assertTrue(t_range.high == 10.0)
 
-    def test_range_low_args(self):
-        t_range = libnagios.args.FRange("@10:")
+    def test_range_low_utils(self):
+        t_range = libnagios.utils.FRange("@10:")
         self.assertFalse(1.0 in t_range)
         self.assertFalse(5.0 in t_range)
         self.assertTrue(10.0 in t_range)
@@ -158,8 +158,8 @@ class TestArgsFRange(unittest.TestCase):
         self.assertTrue(t_range.low == 10.0)
         self.assertTrue(t_range.high == MAXF)
 
-    def test_range_no_args(self):
-        t_range = libnagios.args.FRange("@:")
+    def test_range_no_utils(self):
+        t_range = libnagios.utils.FRange("@:")
         self.assertTrue(1.0 in t_range)
         self.assertTrue(5.0 in t_range)
         self.assertTrue(10.0 in t_range)
@@ -170,8 +170,8 @@ class TestArgsFRange(unittest.TestCase):
         self.assertTrue(t_range.low == 1.0)
         self.assertTrue(t_range.high == MAXF)
 
-    def test_range_negative_args(self):
-        t_range = libnagios.args.FRange("@-10.0:12")
+    def test_range_negative_utils(self):
+        t_range = libnagios.utils.FRange("@-10.0:12")
         self.assertTrue(1.0 in t_range)
         self.assertTrue(5.0 in t_range)
         self.assertTrue(10.0 in t_range)
@@ -185,8 +185,8 @@ class TestArgsFRange(unittest.TestCase):
         self.assertTrue(t_range.low == -10.0)
         self.assertTrue(t_range.high == 12.0)
 
-    def test_inverse_args(self):
-        t_range = libnagios.args.FRange("@10:1.0")
+    def test_inverse_utils(self):
+        t_range = libnagios.utils.FRange("@10:1.0")
         self.assertFalse(1.0 in t_range)
         self.assertFalse(5.0 in t_range)
         self.assertFalse(10.0 in t_range)
@@ -196,9 +196,9 @@ class TestArgsFRange(unittest.TestCase):
         self.assertTrue(t_range.low == 1)
         self.assertTrue(t_range.high == 10)
 
-    def test_no_num_args(self):
+    def test_no_num_utils(self):
         with self.assertRaises(ValueError):
-            t_range = libnagios.args.FRange("@a:b")
+            t_range = libnagios.utils.FRange("@a:b")
 
 
 def setup():
@@ -210,7 +210,7 @@ def setup():
     # Set the defaults
     fmt = "%(asctime)s %(levelname)s %(name)s: %(message)s"
     level = logging.ERROR
-    args = {}
+    utils = {}
 
     debug = os.getenv("DEBUG", "false").lower()
     verbose = os.getenv("VERBOSE", "false").lower()
@@ -220,7 +220,7 @@ def setup():
         level = logging.INFO
     else:
         fmt = "%(name)s: %(message)s"
-    logging.basicConfig(level=level, format=fmt, handlers=handlers, **args)
+    logging.basicConfig(level=level, format=fmt, handlers=handlers, **utils)
     log = logging.getLogger()
     log.setLevel(level)
 

@@ -192,5 +192,21 @@ class FRange(Range):
         return self._high_bounds
 
 
+def units(value: int | float) -> str:
+    """Convert int or float into a number with kB/GB/TB etc after it"""
+
+    labels = ["kB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"]
+    label = ""
+    valcopy = value
+    try:
+        while valcopy > 1024:
+            valcopy /= 1024
+            label = labels.pop(0)
+    except IndexError:
+        valcopy = value
+        label = ""
+    return f"{valcopy:0.1f} {label}".strip()
+
+
 if __name__ == "__main__":
     x = Range("1")

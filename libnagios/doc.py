@@ -36,4 +36,3 @@ Examples:
 * **@30:10**    Tests for membership outside the range 10 - 30 (9 and
     below or 31 and above)
 """
-

@@ -13,16 +13,16 @@
 
 """Nagios plugins library."""
 
-from . import args
 from . import doc
 from . import exceptions
 from . import plugin
+from . import utils
 
 __all__ = [
-    "args",
     "doc",
     "exceptions",
     "plugin",
+    "utils",
 ]
 
 __version__ = "0.7.1"

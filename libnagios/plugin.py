@@ -19,7 +19,6 @@ import json
 import logging
 import os
 import sys
-import textwrap
 import time
 import typing
 
@@ -28,7 +27,6 @@ import rich.markdown
 import rich_argparse
 
 # Local imports
-from . import doc
 from . import exceptions
 from . import types
 
@@ -61,6 +59,10 @@ class Plugin:
         self._message = None
         self._status = types.Status.OK
         self._perfdata = {}
+        self.init()
+
+    def init(self):
+        """Meant to be overridden if your module needs additinal setup"""
 
     @property
     def message(self):
