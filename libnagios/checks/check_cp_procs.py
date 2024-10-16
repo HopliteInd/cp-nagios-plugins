@@ -15,7 +15,11 @@
 
 """Disk checks."""
 
-import pwd
+import platform
+if platform.system() == "Windows":
+    import win32net
+else:
+    import pwd
 
 # 3rd party
 import psutil
