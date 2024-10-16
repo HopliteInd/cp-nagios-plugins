@@ -17,7 +17,11 @@
 
 import platform
 if platform.system() == "Windows":
+    import wmi
+    import win32api
     import win32net
+    import win32netcon
+    import pywintypes
 else:
     import pwd
 
@@ -235,22 +239,35 @@ class Check(libnagios.plugin.Plugin):
         # pylint: disable=attribute-defined-outside-init
         if not self._user_set:
             if self.opts.user:
-                try:
-                    # Test for user being a uid
-                    uid = int(self.opts.user)
-                    self._user = pwd.getpwuid(uid).pw_name
-                except ValueError:
-                    # not a uid.  Must be a user name instead
+                if platform.system() == "Windows":
+                    wmi_info = wmi.WMI().Win32_ComputerSystem()[0]
                     try:
-                        self._user = pwd.getpwnam(self.opts.user).pw_name
+                        if wmi_info.PartOfDomain:
+                            dc = win32net.NetServerEnum(None, 100, win32netcon.SV_TYPE_DOMAIN_CTRL)
+                            dcname = dc[0][0]["name"]
+                            info =  win32net.NetUserGetInfo(f"\\\\{dcname}", self.opts.user, 1)
+                        else:
+                            info = win32net.NetUserGetInfo(None, self.opts.user, 1)
+                        self._user = info["name"]
+                    except pywintypes.error:
+                        self._user = None
+                else:
+                    try:
+                        # Test for user being a uid
+                        uid = int(self.opts.user)
+                        self._user = pwd.getpwuid(uid).pw_name
+                    except ValueError:
+                        # not a uid.  Must be a user name instead
+                        try:
+                            self._user = pwd.getpwnam(self.opts.user).pw_name
+                        except KeyError:
+                            raise libnagios.exceptions.UnknownError(
+                                f"Invalid user [{self.opts.user}]"
+                            ) from None
                     except KeyError:
                         raise libnagios.exceptions.UnknownError(
-                            f"Invalid user [{self.opts.user}]"
+                            f"Invalid uid [{self.opts.user}]"
                         ) from None
-                except KeyError:
-                    raise libnagios.exceptions.UnknownError(
-                        f"Invalid uid [{self.opts.user}]"
-                    ) from None
             else:
                 self._user = None
             self._user_set = True
