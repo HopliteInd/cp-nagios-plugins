@@ -16,6 +16,7 @@
 """Disk checks."""
 
 import platform
+
 if platform.system() != "Windows":
     import pwd
 
@@ -123,8 +124,13 @@ class Check(libnagios.plugin.Plugin):
         if not skip and self.opts.command and proc.name() != self.opts.command:
             skip = True
 
-        if not skip and self.user and proc.username() != self.user:
-            skip = True
+        try:
+            if not skip and self.user and proc.username() != self.user:
+                skip = True
+        except psutil.AccessDenied as err:
+            raise libnagios.exceptions.UnknownError(
+                f"Insufficient permissions to check processes ownership: {err}"
+            ) from None
 
         if not skip:
             meminfo = proc.memory_info()
