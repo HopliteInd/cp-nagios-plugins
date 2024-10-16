@@ -16,13 +16,7 @@
 """Disk checks."""
 
 import platform
-if platform.system() == "Windows":
-    import wmi
-    import win32api
-    import win32net
-    import win32netcon
-    import pywintypes
-else:
+if platform.system() != "Windows":
     import pwd
 
 # 3rd party
@@ -240,17 +234,8 @@ class Check(libnagios.plugin.Plugin):
         if not self._user_set:
             if self.opts.user:
                 if platform.system() == "Windows":
-                    wmi_info = wmi.WMI().Win32_ComputerSystem()[0]
-                    try:
-                        if wmi_info.PartOfDomain:
-                            dc = win32net.NetServerEnum(None, 100, win32netcon.SV_TYPE_DOMAIN_CTRL)
-                            dcname = dc[0][0]["name"]
-                            info =  win32net.NetUserGetInfo(f"\\\\{dcname}", self.opts.user, 1)
-                        else:
-                            info = win32net.NetUserGetInfo(None, self.opts.user, 1)
-                        self._user = info["name"]
-                    except pywintypes.error:
-                        self._user = None
+                    # Don't do validation on windows.... use as is
+                    self._user = self.opts.user
                 else:
                     try:
                         # Test for user being a uid
