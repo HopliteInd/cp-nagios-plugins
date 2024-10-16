@@ -14,7 +14,6 @@
 
 import logging
 import re
-import platform
 
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
