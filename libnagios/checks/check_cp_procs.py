@@ -17,9 +17,6 @@
 
 import platform
 
-if platform.system() != "Windows":
-    import pwd
-
 # 3rd party
 import psutil
 
@@ -121,35 +118,42 @@ class Check(libnagios.plugin.Plugin):
 
         """
         skip = False
-        if not skip and self.opts.command and proc.name() != self.opts.command:
-            skip = True
-
         try:
+            if (
+                not skip
+                and self.opts.command
+                and proc.name() != self.opts.command
+            ):
+                skip = True
+
             if not skip and self.user and proc.username() != self.user:
                 skip = True
+
+            if not skip:
+                meminfo = proc.memory_info()
+
+                if (
+                    not skip
+                    and self.opts.rss is not None
+                    and meminfo.rss < self.opts.rss
+                ):
+                    # Skip processes that don't meet the minimum RSS size
+                    skip = True
+
+                if (
+                    not skip
+                    and self.opts.vsz is not None
+                    and meminfo.vms < self.opts.vsz
+                ):
+                    # Skip processes that don't meet the minimum VSZ size
+                    skip = True
+        except psutil.NoSuchProcess:
+            # Process we are checking for went away. Skip it
+            skip = True
         except psutil.AccessDenied as err:
             raise libnagios.exceptions.UnknownError(
                 f"Insufficient permissions to check processes ownership: {err}"
             ) from None
-
-        if not skip:
-            meminfo = proc.memory_info()
-
-            if (
-                not skip
-                and self.opts.rss is not None
-                and meminfo.rss < self.opts.rss
-            ):
-                # Skip processes that don't meet the minimum RSS size
-                skip = True
-
-            if (
-                not skip
-                and self.opts.vsz is not None
-                and meminfo.vms < self.opts.vsz
-            ):
-                # Skip processes that don't meet the minimum VSZ size
-                skip = True
         return skip
 
     def process_procs(self, state: dict[str, str]):
@@ -243,6 +247,8 @@ class Check(libnagios.plugin.Plugin):
                     # Don't do validation on windows.... use as is
                     self._user = self.opts.user
                 else:
+                    import pwd  # pylint: disable=import-outside-toplevel
+
                     try:
                         # Test for user being a uid
                         uid = int(self.opts.user)
