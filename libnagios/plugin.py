@@ -161,7 +161,7 @@ class Plugin:
         """
 
         log = logging.getLogger(f"{__name__}.Plugin.add_perf_multi")
-        log.debug("data is {type(data)}")
+        log.debug("data is %s", type(data))
 
         if not isinstance(data, dict):
             raise ValueError(
