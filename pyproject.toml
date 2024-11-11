@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "cp-nagios-plugins"
 description = "Cross Platform Nagios Plugins"
 readme = "README.rst"
-license = "Apache-2.0"
+license-expression = "Apache-2.0"
 requires-python = ">=3.6"
 authors = [
     { name = "Hoplite Industries, Inc.", email = "smichael@hopliteindustries.com" },
